@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,13 @@ public class Main {
                 System.out.println("moviment amb id: " + resultat);
             }
 
+            System.out.println("  ");
+               System.out.println("Moviments amb import >= 5:");
+
+                for (String resultat : readStatementsByAmount(cnn, 5.0)) {
+                    System.out.println(resultat);
+                }
+
          } catch (SQLException e) {
                     System.out.println("No connectat!");
                     e.printStackTrace();
@@ -60,8 +68,7 @@ public class Main {
 
     }
 
-    public static List<String> readAllStatements(Connection conn)
-        throws SQLException {
+    public static List<String> readAllStatements(Connection conn) throws SQLException {
 
         List<String> resultatQuery = new ArrayList<String>();
 
@@ -84,6 +91,38 @@ public class Main {
             }
         }
 
+        return resultatQuery;
+    }
+
+    public static List<String> readStatementsByAmount(Connection conn, double quantitat) throws SQLException {
+        List<String> resultatQuery = new ArrayList<String>();
+        String query = "SELECT * FROM statements WHERE import >= ?";
+
+        PreparedStatement ps = conn.prepareStatement(query);
+
+        ps.setDouble(1, quantitat);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                ResultSetMetaData meta = rs.getMetaData();
+                String header = String.join(";",
+                    meta.getColumnName(1),
+                    meta.getColumnName(3),
+                    meta.getColumnName(8),
+                    meta.getColumnName(10)
+            );
+            resultatQuery.add(header);
+
+            while (rs.next()) {
+                String resultat = String.join(";",
+                    rs.getString(1),
+                    rs.getString(3),
+                    rs.getString(8),
+                    rs.getString(10)
+                );
+                resultatQuery.add(resultat);
+            }
+        }
         return resultatQuery;
     }
 }
