@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import com.zaxxer.hikari.HikariConfig;
@@ -19,7 +21,7 @@ public class Main {
         Properties prop = new Properties();
 
         try {
-            prop.load(Files.newBufferedReader(Path.of("banc","src","main","resources","com.properties")));
+            prop.load(Files.newBufferedReader(Path.of("banc","src","main","resources","conn.properties")));
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -41,30 +43,47 @@ public class Main {
         try (HikariDataSource hkds = new HikariDataSource(hkcfg)) {
 //connectem la base de dades
             try (Connection cnn = hkds.getConnection()) {
-              String query = "SELECT * FROM statements";
+              
+                for (String resultat : readAllStatements(cnn)) {
+                System.out.println("moviment amb id: " + resultat);
+            }
 
-              PreparedStatement ps = cnn.prepareStatement(query);
-
-                try (ResultSet rs = ps.executeQuery()) {
-
-                    while (rs.next()) {
-
-                        String resultat = String.join(";",
-                                rs.getString("id_statement"),
-                                rs.getString("tipus_moviment"),
-                                rs.getString("import"),
-                                rs.getString("divisa")
-                            );
-                        System.out.println("moviment amb id: " + resultat);
-                        }
-                    }
-
-                } catch (SQLException e) {
+         } catch (SQLException e) {
                     System.out.println("No connectat!");
                     e.printStackTrace();
-                }
+            }
+
         } catch (PoolInitializationException e) {
+            System.out.println("No s'ha pogut connectar a la base de dades: " + e.getMessage());
             
         }
+
+    }
+
+    public static List<String> readAllStatements(Connection conn)
+        throws SQLException {
+
+        List<String> resultatQuery = new ArrayList<String>();
+
+        String query = "SELECT * FROM statements";
+
+        PreparedStatement ps = conn.prepareStatement(query);
+
+        try (ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+
+                String resultat = String.join(";",
+                        rs.getString("id_statement"),
+                        rs.getString("tipus_moviment"),
+                        rs.getString("import"),
+                        rs.getString("divisa")
+                );
+
+                resultatQuery.add(resultat);
+            }
+        }
+
+        return resultatQuery;
     }
 }
