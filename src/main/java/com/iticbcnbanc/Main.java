@@ -1,5 +1,6 @@
 package com.iticbcnbanc;
 
+import java.util.Scanner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,10 +38,6 @@ public class Main {
  
  
 //iniciem el datasource i controlem excepcions
- 
- 
- 
- 
         try (HikariDataSource hkds = new HikariDataSource(hkcfg)) {
 //connectem la base de dades
             try (Connection cnn = hkds.getConnection()) {
@@ -55,6 +52,26 @@ public class Main {
                 for (String resultat : readStatementsByAmount(cnn, 5.0)) {
                     System.out.println(resultat);
                 }
+
+            Scanner sc = new Scanner(System.in);
+            System.out.println("\n--- INSERCIÓ D'UN CLIENT NOU ---");
+
+            System.out.print("Introdueix el nom: ");
+            String nom = sc.nextLine();
+
+            System.out.print("Introdueix els cognoms: ");
+            String cognoms = sc.nextLine();
+
+            System.out.print("Introdueix l'identificador fiscal: ");
+            String idFiscal = sc.nextLine();
+
+            List<String> dadesClient = new ArrayList<>();
+
+            dadesClient.add(nom);
+            dadesClient.add(cognoms);
+            dadesClient.add(idFiscal);
+
+            insertClient(cnn, dadesClient);
 
          } catch (SQLException e) {
                     System.out.println("No connectat!");
@@ -124,5 +141,46 @@ public class Main {
             }
         }
         return resultatQuery;
+    }
+
+    public static boolean clientExists(Connection conn,String idFiscal) throws SQLException {
+
+        String query = "SELECT * FROM clients WHERE id_fiscal = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, idFiscal);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    public static void insertClient(Connection conn,List<String> dadesClient) throws SQLException {
+
+        String nom = dadesClient.get(0);
+        String cognoms = dadesClient.get(1);
+        String idFiscal = dadesClient.get(2);
+
+        if (clientExists(conn, idFiscal)) {
+            System.out.println("El client amb id fiscal " + idFiscal + " ja existeix.");
+            return;
+        } 
+        
+        String insert = "INSERT INTO clients (nom, cognoms, id_fiscal) VALUES (?, ?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(insert)) {
+
+            ps.setString(1, nom);
+            ps.setString(2, cognoms);
+            ps.setString(3, idFiscal);
+
+            int filesAfectades = ps.executeUpdate();
+
+            System.out.println(
+                    "Files inserides: " + filesAfectades
+            );
+        }
     }
 }
